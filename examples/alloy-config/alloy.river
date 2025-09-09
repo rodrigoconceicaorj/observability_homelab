@@ -1,0 +1,60 @@
+// =============================================================================
+// BASIC ALLOY CONFIGURATION FOR GRAFANA TEMPO INTEGRATION
+// =============================================================================
+
+// OTLP receiver for traces, metrics, and logs
+otelcol.receiver.otlp "default" {
+  grpc {
+    endpoint = "0.0.0.0:4317"
+  }
+  http {
+    endpoint = "0.0.0.0:4318"
+  }
+  
+  output {
+    traces = [otelcol.processor.batch.traces.input]
+    metrics = [otelcol.processor.batch.metrics.input]
+  }
+}
+
+// Batch processor for traces
+otelcol.processor.batch "traces" {
+  send_batch_size = 512
+  timeout = "2s"
+  
+  output {
+    traces = [otelcol.exporter.otlp.traces.input]
+  }
+}
+
+// Batch processor for metrics
+otelcol.processor.batch "metrics" {
+  send_batch_size = 512
+  timeout = "2s"
+  
+  output {
+    metrics = [otelcol.exporter.prometheus.default.input]
+  }
+}
+
+// Export traces to Grafana Tempo
+otelcol.exporter.otlp "traces" {
+  client {
+    endpoint = "http://tempo:4317"
+    tls {
+      insecure = true
+    }
+  }
+}
+
+// Export metrics to Prometheus
+otelcol.exporter.prometheus "default" {
+  forward_to = [prometheus.remote_write.default.receiver]
+}
+
+// Prometheus remote write
+prometheus.remote_write "default" {
+  endpoint {
+    url = "http://prometheus:9090/api/v1/write"
+  }
+}

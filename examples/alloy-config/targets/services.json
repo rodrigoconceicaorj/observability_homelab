@@ -1,0 +1,90 @@
+[
+  {
+    "targets": ["sample-web-app:80"],
+    "labels": {
+      "job": "web-app",
+      "environment": "poc",
+      "team": "frontend",
+      "service": "nginx-sample",
+      "version": "1.0.0",
+      "__metrics_path__": "/metrics"
+    }
+  },
+  {
+    "targets": ["sample-node-app:3000"],
+    "labels": {
+      "job": "node-app",
+      "environment": "poc",
+      "team": "backend",
+      "service": "node-sample",
+      "version": "1.0.0",
+      "__metrics_path__": "/metrics"
+    }
+  },
+  {
+    "targets": ["prometheus:9090"],
+    "labels": {
+      "job": "prometheus",
+      "environment": "poc",
+      "team": "observability",
+      "service": "prometheus",
+      "version": "latest",
+      "__metrics_path__": "/metrics"
+    }
+  },
+  {
+    "targets": ["grafana:3000"],
+    "labels": {
+      "job": "grafana",
+      "environment": "poc",
+      "team": "observability",
+      "service": "grafana",
+      "version": "latest",
+      "__metrics_path__": "/metrics"
+    }
+  },
+  {
+    "targets": ["loki:3100"],
+    "labels": {
+      "job": "loki",
+      "environment": "poc",
+      "team": "observability",
+      "service": "loki",
+      "version": "latest",
+      "__metrics_path__": "/metrics"
+    }
+  },
+  {
+    "targets": ["jaeger:14269"],
+    "labels": {
+      "job": "jaeger",
+      "environment": "poc",
+      "team": "observability",
+      "service": "jaeger",
+      "version": "latest",
+      "__metrics_path__": "/metrics"
+    }
+  },
+  {
+    "targets": ["node-exporter:9100"],
+    "labels": {
+      "job": "node-exporter",
+      "environment": "poc",
+      "team": "infrastructure",
+      "service": "node-exporter",
+      "version": "latest",
+      "__metrics_path__": "/metrics"
+    }
+  },
+  {
+    "targets": ["cadvisor:8080"],
+    "labels": {
+      "job": "cadvisor",
+      "environment": "poc",
+      "team": "infrastructure",
+      "service": "cadvisor",
+      "version": "latest",
+      "__metrics_path__": "/metrics"
+    }
+  }
+]

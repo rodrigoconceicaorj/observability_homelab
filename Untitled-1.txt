@@ -1,0 +1,23 @@
+poc-porto/
+├── README.md                     # Visão geral da POC
+├── docs/
+│   ├── 01-grafana-faro.md       # Documentação técnica Faro
+│   ├── 02-grafana-beyla.md      # Documentação técnica Beyla
+│   ├── 03-grafana-alloy.md      # Documentação técnica Alloy
+│   ├── 04-comparativo.md        # Comparativo de capacidades
+│   ├── 05-arquitetura.md        # Arquitetura da solução
+│   └── 06-guia-configuracao.md  # Guia step-by-step
+├── examples/
+│   ├── web-app/                 # Exemplo React + Faro
+│   ├── mobile-app/              # Exemplo mobile + Faro
+│   ├── beyla-config/            # Configs Beyla
+│   └── alloy-config/            # Configs Alloy
+├── scripts/
+│   ├── setup.bat               # Setup Windows
+│   ├── start-services.bat      # Iniciar serviços
+│   └── cleanup.bat             # Limpeza
+└── docker/
+    ├── docker-compose.yml      # Stack completa
+    ├── grafana/                # Configs Grafana
+    ├── alloy/                  # Configs Alloy
+    └── beyla/                  # Configs Beyla

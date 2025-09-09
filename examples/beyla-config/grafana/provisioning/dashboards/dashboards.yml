@@ -1,0 +1,48 @@
+# Grafana Dashboards Provisioning Configuration for Beyla POC
+
+apiVersion: 1
+
+providers:
+  # Dashboards principais do Beyla
+  - name: 'beyla-dashboards'
+    orgId: 1
+    folder: 'Beyla Monitoring'
+    type: file
+    disableDeletion: false
+    updateIntervalSeconds: 10
+    allowUiUpdates: true
+    options:
+      path: /etc/grafana/provisioning/dashboards/beyla
+
+  # Dashboards de infraestrutura
+  - name: 'infrastructure-dashboards'
+    orgId: 1
+    folder: 'Infrastructure'
+    type: file
+    disableDeletion: false
+    updateIntervalSeconds: 10
+    allowUiUpdates: true
+    options:
+      path: /etc/grafana/provisioning/dashboards/infrastructure
+
+  # Dashboards de aplicação
+  - name: 'application-dashboards'
+    orgId: 1
+    folder: 'Applications'
+    type: file
+    disableDeletion: false
+    updateIntervalSeconds: 10
+    allowUiUpdates: true
+    options:
+      path: /etc/grafana/provisioning/dashboards/applications
+
+  # Dashboards de observabilidade
+  - name: 'observability-dashboards'
+    orgId: 1
+    folder: 'Observability Stack'
+    type: file
+    disableDeletion: false
+    updateIntervalSeconds: 10
+    allowUiUpdates: true
+    options:
+      path: /etc/grafana/provisioning/dashboards/observability

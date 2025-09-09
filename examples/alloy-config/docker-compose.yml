@@ -1,0 +1,298 @@
+version: '3.8'
+
+services:
+  # =============================================================================
+  # GRAFANA ALLOY - Central Observability Collector
+  # =============================================================================
+  alloy:
+    image: grafana/alloy:latest
+    container_name: alloy-collector
+    hostname: alloy-collector
+    ports:
+      - "12345:12345"   # Alloy UI and metrics
+      - "4317:4317"     # OTLP gRPC receiver
+      - "4318:4318"     # OTLP HTTP receiver
+      - "4327:4327"     # Faro OTLP gRPC
+      - "4328:4328"     # Faro OTLP HTTP
+      - "9464:9464"     # Prometheus metrics export
+      - "14250:14250"   # Jaeger gRPC
+      - "14268:14268"   # Jaeger HTTP
+      - "6831:6831/udp" # Jaeger compact
+      - "6832:6832/udp" # Jaeger binary
+    volumes:
+      - ./alloy.river:/etc/alloy/config.river:ro
+      - ./targets:/etc/alloy/targets:ro
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+      - ./logs:/var/log:ro
+    command:
+      - run
+      - /etc/alloy/config.river
+      - --server.http.listen-addr=0.0.0.0:12345
+      - --cluster.enabled=false
+      - --disable-reporting=true
+    environment:
+      - ALLOY_LOG_LEVEL=info
+    networks:
+      - observability
+    labels:
+      - "logging=enabled"
+    healthcheck:
+      test: ["CMD-SHELL", "wget --no-verbose --tries=1 --spider http://localhost:12345/ready || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+  # =============================================================================
+  # STORAGE BACKENDS
+  # =============================================================================
+  
+  # Prometheus for metrics storage
+  prometheus:
+    image: prom/prometheus:latest
+    container_name: prometheus-storage
+    ports:
+      - "9090:9090"
+    volumes:
+      - ./prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - prometheus-data:/prometheus
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yml'
+      - '--storage.tsdb.path=/prometheus'
+      - '--web.console.libraries=/etc/prometheus/console_libraries'
+      - '--web.console.templates=/etc/prometheus/consoles'
+      - '--storage.tsdb.retention.time=7d'
+      - '--web.enable-lifecycle'
+      - '--web.enable-admin-api'
+      - '--enable-feature=remote-write-receiver'
+    networks:
+      - observability
+    labels:
+      - "logging=enabled"
+
+  # Loki for logs storage
+  loki:
+    image: grafana/loki:latest
+    container_name: loki-storage
+    ports:
+      - "3100:3100"
+    volumes:
+      - ./loki-config.yml:/etc/loki/local-config.yaml:ro
+      - loki-data:/loki
+    command: -config.file=/etc/loki/local-config.yaml
+    networks:
+      - observability
+    labels:
+      - "logging=enabled"
+
+  # Grafana Tempo for traces storage
+  tempo:
+    image: grafana/tempo:latest
+    container_name: tempo-storage
+    ports:
+      - "3200:3200"     # Tempo UI
+    volumes:
+      - ./tempo.yml:/etc/tempo/tempo.yml:ro
+      - tempo-data:/var/tempo
+    command:
+      - "-config.file=/etc/tempo/tempo.yml"
+    networks:
+      - observability
+    labels:
+      - "logging=enabled"
+
+  # =============================================================================
+  # VISUALIZATION
+  # =============================================================================
+  
+  grafana:
+    image: grafana/grafana:latest
+    container_name: grafana-viz
+    ports:
+      - "3003:3000"
+    volumes:
+      - ./grafana/dashboards:/var/lib/grafana/dashboards:ro
+      - ./grafana/provisioning:/etc/grafana/provisioning:ro
+      - grafana-data:/var/lib/grafana
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+    environment:
+      - GF_SECURITY_ADMIN_PASSWORD=admin
+      - GF_USERS_ALLOW_SIGN_UP=false
+      - GF_INSTALL_PLUGINS=grafana-clock-panel,grafana-simple-json-datasource
+      - GF_FEATURE_TOGGLES_ENABLE=traceqlEditor
+    networks:
+      - observability
+    labels:
+      - "logging=enabled"
+    depends_on:
+      - prometheus
+      - loki
+      - tempo
+
+  # =============================================================================
+  # SAMPLE APPLICATIONS
+  # =============================================================================
+  
+  # Sample web application with metrics
+  sample-web-app:
+    image: nginx:alpine
+    container_name: sample-web-app
+    ports:
+      - "8080:80"
+    volumes:
+      - ./sample-apps/nginx.conf:/etc/nginx/nginx.conf:ro
+      - ./sample-apps/html:/usr/share/nginx/html:ro
+    networks:
+      - observability
+    labels:
+      - "logging=enabled"
+      - "metrics.scrape=true"
+      - "metrics.port=80"
+      - "metrics.path=/metrics"
+
+  # POC Web Application with Grafana Faro
+  poc-web-app:
+    build:
+      context: ../web-app
+      dockerfile: Dockerfile
+    container_name: poc-web-app
+    ports:
+      - "3002:80"
+    environment:
+      - VITE_FARO_URL=http://alloy:4328
+      - VITE_FARO_APP_NAME=poc-web-app
+      - VITE_FARO_APP_VERSION=1.0.0
+      - VITE_FARO_ENVIRONMENT=docker
+    networks:
+      - observability
+    labels:
+      - "logging=enabled"
+      - "metrics.scrape=true"
+      - "metrics.port=80"
+      - "metrics.path=/metrics"
+    depends_on:
+      - alloy
+
+  # Node.js application with custom metrics
+  sample-node-app:
+    build:
+      context: ./sample-apps/node-app
+      dockerfile: Dockerfile
+    container_name: sample-node-app
+    ports:
+      - "3001:3000"
+    environment:
+      - NODE_ENV=production
+      - METRICS_ENABLED=true
+      - TRACING_ENABLED=true
+      - OTLP_ENDPOINT=http://alloy:4318
+    networks:
+      - observability
+    labels:
+      - "logging=enabled"
+      - "metrics.scrape=true"
+      - "metrics.port=3000"
+      - "metrics.path=/metrics"
+    depends_on:
+      - alloy
+
+  # =============================================================================
+  # MONITORING TOOLS
+  # =============================================================================
+  
+  # Node exporter for system metrics
+  node-exporter:
+    image: prom/node-exporter:latest
+    container_name: node-exporter
+    ports:
+      - "9100:9100"
+    volumes:
+      - /proc:/host/proc:ro
+      - /sys:/host/sys:ro
+      - /:/rootfs:ro
+    command:
+      - '--path.procfs=/host/proc'
+      - '--path.rootfs=/rootfs'
+      - '--path.sysfs=/host/sys'
+      - '--collector.filesystem.mount-points-exclude=^/(sys|proc|dev|host|etc)($$|/)'
+    networks:
+      - observability
+    labels:
+      - "logging=enabled"
+
+  # cAdvisor for container metrics
+  cadvisor:
+    image: gcr.io/cadvisor/cadvisor:latest
+    container_name: cadvisor
+    ports:
+      - "8081:8080"
+    volumes:
+      - /:/rootfs:ro
+      - /var/run:/var/run:ro
+      - /sys:/sys:ro
+      - /var/lib/docker/:/var/lib/docker:ro
+      - /dev/disk/:/dev/disk:ro
+    privileged: true
+    devices:
+      - /dev/kmsg
+    networks:
+      - observability
+    labels:
+      - "logging=enabled"
+
+  # POC Mobile Application with Grafana Faro
+  poc-mobile-app:
+    build:
+      context: ../mobile-app
+      dockerfile: Dockerfile
+    container_name: poc-mobile-app
+    ports:
+      - "19006:19006"  # Expo Metro bundler
+      - "8082:8081"    # Metro bundler alternative port
+    environment:
+      - EXPO_DEVTOOLS_LISTEN_ADDRESS=0.0.0.0
+      - REACT_NATIVE_PACKAGER_HOSTNAME=0.0.0.0
+      - FARO_URL=http://alloy:4328
+      - FARO_APP_NAME=poc-mobile-app
+      - FARO_APP_VERSION=1.0.0
+      - FARO_ENVIRONMENT=docker
+    networks:
+      - observability
+    labels:
+      - "logging=enabled"
+      - "metrics.scrape=true"
+      - "metrics.port=19006"
+      - "metrics.path=/metrics"
+    depends_on:
+      - alloy
+
+  # =============================================================================
+  # LOAD GENERATOR
+  # =============================================================================
+  
+  load-generator:
+    image: alpine/curl:latest
+    container_name: load-generator
+    volumes:
+      - ./scripts/load-test.sh:/load-test.sh:ro
+    command: ["/bin/sh", "/load-test.sh"]
+    networks:
+      - observability
+    depends_on:
+      - sample-web-app
+      - sample-node-app
+    profiles:
+      - load-test
+
+volumes:
+  prometheus-data:
+  loki-data:
+  grafana-data:
+  tempo-data:
+
+networks:
+  observability:
+    driver: bridge
+    ipam:
+      config:
+        - subnet: 172.20.0.0/16

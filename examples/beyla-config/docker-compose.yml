@@ -1,0 +1,155 @@
+version: '3.8'
+
+services:
+  # Aplicação exemplo para monitoramento
+  sample-app:
+    image: nginx:alpine
+    container_name: sample-app
+    ports:
+      - "3000:80"
+    volumes:
+      - ./sample-app/nginx.conf:/etc/nginx/nginx.conf:ro
+      - ./sample-app/html:/usr/share/nginx/html:ro
+    environment:
+      - NGINX_PORT=80
+    networks:
+      - beyla-network
+    labels:
+      - "beyla.instrument=true"
+      - "beyla.service.name=sample-app"
+      - "beyla.service.namespace=poc-porto"
+
+  # Grafana Beyla - Coletor automático de métricas
+  beyla:
+    image: grafana/beyla:latest
+    container_name: beyla
+    privileged: true
+    pid: "host"
+    volumes:
+      - ./beyla.yml:/etc/beyla/beyla.yml:ro
+      - /sys/kernel/debug:/sys/kernel/debug:ro
+      - /proc:/proc:ro
+      - /sys/fs/cgroup:/sys/fs/cgroup:ro
+    environment:
+      - BEYLA_CONFIG_PATH=/etc/beyla/beyla.yml
+      - BEYLA_LOG_LEVEL=info
+      - BEYLA_DISCOVERY_POLL_INTERVAL=5s
+      - OTEL_EXPORTER_OTLP_ENDPOINT=http://alloy:4317
+      - OTEL_RESOURCE_ATTRIBUTES=service.name=beyla,service.version=1.0.0,deployment.environment=poc
+    depends_on:
+      - alloy
+    networks:
+      - beyla-network
+    cap_add:
+      - SYS_ADMIN
+      - SYS_PTRACE
+      - NET_ADMIN
+    security_opt:
+      - apparmor:unconfined
+
+  # Grafana Alloy - Coletor e roteador de dados
+  alloy:
+    image: grafana/alloy:latest
+    container_name: alloy
+    ports:
+      - "12345:12345"  # UI do Alloy
+      - "4317:4317"    # OTLP gRPC
+      - "4318:4318"    # OTLP HTTP
+      - "9090:9090"    # Prometheus metrics
+    volumes:
+      - ./alloy-config.river:/etc/alloy/config.river:ro
+    command:
+      - "run"
+      - "/etc/alloy/config.river"
+      - "--server.http.listen-addr=0.0.0.0:12345"
+      - "--storage.path=/var/lib/alloy/data"
+    environment:
+      - ALLOY_LOG_LEVEL=info
+    networks:
+      - beyla-network
+
+  # Prometheus - Armazenamento de métricas
+  prometheus:
+    image: prom/prometheus:latest
+    container_name: prometheus
+    ports:
+      - "9091:9090"
+    volumes:
+      - ./prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - prometheus-data:/prometheus
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yml'
+      - '--storage.tsdb.path=/prometheus'
+      - '--web.console.libraries=/etc/prometheus/console_libraries'
+      - '--web.console.templates=/etc/prometheus/consoles'
+      - '--storage.tsdb.retention.time=200h'
+      - '--web.enable-lifecycle'
+    networks:
+      - beyla-network
+
+  # Grafana - Visualização
+  grafana:
+    image: grafana/grafana:latest
+    container_name: grafana
+    ports:
+      - "3001:3000"
+    volumes:
+      - grafana-data:/var/lib/grafana
+      - ./grafana/provisioning:/etc/grafana/provisioning:ro
+      - ./grafana/dashboards:/var/lib/grafana/dashboards:ro
+    environment:
+      - GF_SECURITY_ADMIN_PASSWORD=admin
+      - GF_USERS_ALLOW_SIGN_UP=false
+      - GF_INSTALL_PLUGINS=grafana-piechart-panel
+    networks:
+      - beyla-network
+
+  # Jaeger - Tracing (opcional)
+  jaeger:
+    image: jaegertracing/all-in-one:latest
+    container_name: jaeger
+    ports:
+      - "16686:16686"  # UI
+      - "14268:14268"  # HTTP collector
+    environment:
+      - COLLECTOR_OTLP_ENABLED=true
+    networks:
+      - beyla-network
+
+  # Load generator para testes
+  load-generator:
+    image: alpine/curl:latest
+    container_name: load-generator
+    depends_on:
+      - sample-app
+    networks:
+      - beyla-network
+    command: >
+      sh -c '
+        echo "Aguardando aplicação inicializar..."
+        sleep 30
+        echo "Iniciando geração de carga..."
+        while true; do
+          # Requisições normais
+          curl -s http://sample-app/ > /dev/null
+          curl -s http://sample-app/api/users > /dev/null
+          curl -s http://sample-app/api/products > /dev/null
+          
+          # Requisições com erro
+          curl -s http://sample-app/not-found > /dev/null
+          curl -s http://sample-app/api/error > /dev/null
+          
+          # Requisições lentas
+          curl -s http://sample-app/api/slow > /dev/null
+          
+          sleep 2
+        done
+      '
+
+volumes:
+  prometheus-data:
+  grafana-data:
+
+networks:
+  beyla-network:
+    driver: bridge

@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>POC Porto Mobile - React Native</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 0; padding: 20px; background: #f5f5f5; }
+        .container { max-width: 800px; margin: 0 auto; background: white; padding: 30px; border-radius: 10px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
+        .header { text-align: center; margin-bottom: 30px; }
+        .logo { width: 100px; height: 100px; background: #007bff; border-radius: 50%; margin: 0 auto 20px; display: flex; align-items: center; justify-content: center; color: white; font-size: 24px; font-weight: bold; }
+        .status { padding: 15px; background: #d4edda; border: 1px solid #c3e6cb; border-radius: 5px; margin: 20px 0; }
+        .info { background: #d1ecf1; border: 1px solid #bee5eb; padding: 15px; border-radius: 5px; margin: 20px 0; }
+        .metro-info { background: #fff3cd; border: 1px solid #ffeaa7; padding: 15px; border-radius: 5px; margin: 20px 0; }
+        .btn { display: inline-block; padding: 10px 20px; background: #007bff; color: white; text-decoration: none; border-radius: 5px; margin: 10px 5px; }
+        .btn:hover { background: #0056b3; }
+        ul { text-align: left; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <div class="logo">RN</div>
+            <h1>POC Porto Mobile</h1>
+            <h2>React Native Application</h2>
+        </div>
+        
+        <div class="status">
+            <h3>✅ Status: Aplicação React Native Ativa</h3>
+            <p>O Metro bundler está rodando e pronto para desenvolvimento.</p>
+        </div>
+        
+        <div class="info">
+            <h3>📱 Sobre esta Aplicação</h3>
+            <p>Esta é uma aplicação React Native configurada com:</p>
+            <ul>
+                <li>Metro bundler para desenvolvimento</li>
+                <li>Integração com Grafana Faro para observabilidade</li>
+                <li>Suporte para Android e iOS</li>
+                <li>Navegação com React Navigation</li>
+            </ul>
+        </div>
+        
+        <div class="metro-info">
+            <h3>🔧 Metro Bundler</h3>
+            <p>O Metro bundler está rodando na porta 8081 e pode ser acessado em:</p>
+            <a href="http://localhost:8082" class="btn" target="_blank">Acessar Metro Bundler</a>
+        </div>
+        
+        <div class="info">
+            <h3>📊 Monitoramento</h3>
+            <p>Esta aplicação está integrada com a stack de observabilidade:</p>
+            <ul>
+                <li><strong>Grafana:</strong> <a href="http://localhost:3003" target="_blank">http://localhost:3003</a></li>
+                <li><strong>Prometheus:</strong> <a href="http://localhost:9090" target="_blank">http://localhost:9090</a></li>
+                <li><strong>Alloy:</strong> <a href="http://localhost:12345" target="_blank">http://localhost:12345</a></li>
+            </ul>
+        </div>
+        
+        <div class="info">
+            <h3>🚀 Como usar</h3>
+            <p>Para desenvolver com esta aplicação React Native:</p>
+            <ol>
+                <li>Conecte um dispositivo Android ou inicie um emulador</li>
+                <li>Execute: <code>npx react-native run-android</code></li>
+                <li>Ou para iOS: <code>npx react-native run-ios</code></li>
+                <li>O app será instalado e conectado ao Metro bundler</li>
+            </ol>
+        </div>
+    </div>
+</body>
+</html>

@@ -1,0 +1,243 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>500 - Erro Interno | POC Grafana Beyla</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: linear-gradient(135deg, #dc3545 0%, #c82333 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+        }
+        
+        .error-container {
+            text-align: center;
+            max-width: 600px;
+            padding: 40px;
+        }
+        
+        .error-code {
+            font-size: 8rem;
+            font-weight: bold;
+            margin-bottom: 20px;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+            animation: shake 2s infinite;
+        }
+        
+        .error-message {
+            font-size: 2rem;
+            margin-bottom: 20px;
+            opacity: 0.9;
+        }
+        
+        .error-description {
+            font-size: 1.2rem;
+            margin-bottom: 40px;
+            opacity: 0.8;
+            line-height: 1.6;
+        }
+        
+        .btn {
+            background: rgba(255, 255, 255, 0.2);
+            color: white;
+            border: 2px solid white;
+            padding: 15px 30px;
+            border-radius: 8px;
+            text-decoration: none;
+            font-size: 1.1rem;
+            transition: all 0.3s ease;
+            display: inline-block;
+            margin: 0 10px;
+        }
+        
+        .btn:hover {
+            background: white;
+            color: #dc3545;
+            transform: translateY(-2px);
+        }
+        
+        .monitoring-note {
+            background: rgba(255, 255, 255, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            border-radius: 8px;
+            padding: 20px;
+            margin-top: 40px;
+            backdrop-filter: blur(10px);
+        }
+        
+        .monitoring-note h3 {
+            margin-bottom: 10px;
+            color: #ffd700;
+        }
+        
+        .error-details {
+            background: rgba(0, 0, 0, 0.2);
+            border-radius: 8px;
+            padding: 15px;
+            margin: 20px 0;
+            font-family: 'Monaco', 'Consolas', monospace;
+            font-size: 0.9rem;
+            text-align: left;
+        }
+        
+        @keyframes shake {
+            0%, 100% {
+                transform: translateX(0);
+            }
+            10%, 30%, 50%, 70%, 90% {
+                transform: translateX(-2px);
+            }
+            20%, 40%, 60%, 80% {
+                transform: translateX(2px);
+            }
+        }
+        
+        .icon {
+            font-size: 4rem;
+            margin-bottom: 20px;
+            animation: pulse 2s ease-in-out infinite;
+        }
+        
+        @keyframes pulse {
+            0%, 100% {
+                transform: scale(1);
+                opacity: 1;
+            }
+            50% {
+                transform: scale(1.1);
+                opacity: 0.8;
+            }
+        }
+        
+        .metrics-info {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            margin-top: 20px;
+        }
+        
+        .metric-item {
+            background: rgba(255, 255, 255, 0.1);
+            padding: 15px;
+            border-radius: 6px;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+        
+        .metric-item h4 {
+            color: #ffd700;
+            margin-bottom: 5px;
+            font-size: 0.9rem;
+        }
+        
+        .metric-item p {
+            font-size: 0.8rem;
+            opacity: 0.9;
+        }
+    </style>
+</head>
+<body>
+    <div class="error-container">
+        <div class="icon">💥</div>
+        <div class="error-code">5XX</div>
+        <div class="error-message">Erro Interno do Servidor</div>
+        <div class="error-description">
+            Algo deu errado no nosso servidor. Nossa equipe foi notificada automaticamente
+            <br>e está trabalhando para resolver o problema.
+        </div>
+        
+        <div class="error-details">
+            <strong>Detalhes do Erro:</strong><br>
+            Timestamp: <span id="timestamp"></span><br>
+            Error ID: <span id="errorId"></span><br>
+            Request ID: <span id="requestId"></span>
+        </div>
+        
+        <div>
+            <a href="/" class="btn">🏠 Voltar ao Início</a>
+            <a href="javascript:location.reload()" class="btn">🔄 Tentar Novamente</a>
+        </div>
+        
+        <div class="monitoring-note">
+            <h3>🚨 Monitoramento e Alertas</h3>
+            <p>
+                Este erro foi automaticamente detectado pelo <strong>Grafana Beyla</strong> 
+                e está sendo processado pelo nosso sistema de observabilidade.
+            </p>
+            
+            <div class="metrics-info">
+                <div class="metric-item">
+                    <h4>📊 Métricas Coletadas</h4>
+                    <p>Taxa de erro, latência, throughput</p>
+                </div>
+                <div class="metric-item">
+                    <h4>🔍 Traces Distribuídos</h4>
+                    <p>Rastreamento completo da requisição</p>
+                </div>
+                <div class="metric-item">
+                    <h4>📈 Dashboards</h4>
+                    <p>Visualização em tempo real</p>
+                </div>
+                <div class="metric-item">
+                    <h4>🚨 Alertas</h4>
+                    <p>Notificação automática da equipe</p>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <script>
+        // Gerar IDs únicos para demonstração
+        function generateId(length = 8) {
+            return Math.random().toString(36).substring(2, length + 2).toUpperCase();
+        }
+        
+        // Preencher detalhes do erro
+        document.getElementById('timestamp').textContent = new Date().toISOString();
+        document.getElementById('errorId').textContent = 'ERR-' + generateId();
+        document.getElementById('requestId').textContent = 'REQ-' + generateId(12);
+        
+        // Log para demonstração
+        console.error('🚨 Erro 5XX capturado pelo Beyla:', {
+            timestamp: new Date().toISOString(),
+            errorId: document.getElementById('errorId').textContent,
+            requestId: document.getElementById('requestId').textContent,
+            url: window.location.href,
+            userAgent: navigator.userAgent
+        });
+        
+        // Simular envio de métricas de erro
+        if (window.parent && window.parent !== window) {
+            window.parent.postMessage({
+                type: 'beyla-demo-event',
+                event: '5xx-error',
+                timestamp: Date.now(),
+                url: window.location.href,
+                errorId: document.getElementById('errorId').textContent,
+                requestId: document.getElementById('requestId').textContent
+            }, '*');
+        }
+        
+        // Simular coleta de métricas adicionais
+        setTimeout(() => {
+            console.log('📊 Métricas de erro enviadas para Beyla:', {
+                errorRate: '0.05%',
+                responseTime: '0ms',
+                statusCode: 500,
+                service: 'sample-app',
+                namespace: 'poc-porto'
+            });
+        }, 1000);
+    </script>
+</body>
+</html>

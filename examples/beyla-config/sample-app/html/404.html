@@ -1,0 +1,152 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>404 - Página Não Encontrada | POC Grafana Beyla</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+        }
+        
+        .error-container {
+            text-align: center;
+            max-width: 600px;
+            padding: 40px;
+        }
+        
+        .error-code {
+            font-size: 8rem;
+            font-weight: bold;
+            margin-bottom: 20px;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+            animation: bounce 2s infinite;
+        }
+        
+        .error-message {
+            font-size: 2rem;
+            margin-bottom: 20px;
+            opacity: 0.9;
+        }
+        
+        .error-description {
+            font-size: 1.2rem;
+            margin-bottom: 40px;
+            opacity: 0.8;
+            line-height: 1.6;
+        }
+        
+        .btn {
+            background: rgba(255, 255, 255, 0.2);
+            color: white;
+            border: 2px solid white;
+            padding: 15px 30px;
+            border-radius: 8px;
+            text-decoration: none;
+            font-size: 1.1rem;
+            transition: all 0.3s ease;
+            display: inline-block;
+            margin: 0 10px;
+        }
+        
+        .btn:hover {
+            background: white;
+            color: #667eea;
+            transform: translateY(-2px);
+        }
+        
+        .monitoring-note {
+            background: rgba(255, 255, 255, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            border-radius: 8px;
+            padding: 20px;
+            margin-top: 40px;
+            backdrop-filter: blur(10px);
+        }
+        
+        .monitoring-note h3 {
+            margin-bottom: 10px;
+            color: #ffd700;
+        }
+        
+        @keyframes bounce {
+            0%, 20%, 50%, 80%, 100% {
+                transform: translateY(0);
+            }
+            40% {
+                transform: translateY(-10px);
+            }
+            60% {
+                transform: translateY(-5px);
+            }
+        }
+        
+        .icon {
+            font-size: 4rem;
+            margin-bottom: 20px;
+            animation: float 3s ease-in-out infinite;
+        }
+        
+        @keyframes float {
+            0%, 100% {
+                transform: translateY(0px);
+            }
+            50% {
+                transform: translateY(-10px);
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="error-container">
+        <div class="icon">🔍</div>
+        <div class="error-code">404</div>
+        <div class="error-message">Página Não Encontrada</div>
+        <div class="error-description">
+            Ops! A página que você está procurando não existe ou foi movida.
+            <br>Mas não se preocupe, o Beyla está monitorando este erro automaticamente!
+        </div>
+        
+        <div>
+            <a href="/" class="btn">🏠 Voltar ao Início</a>
+            <a href="javascript:history.back()" class="btn">⬅️ Página Anterior</a>
+        </div>
+        
+        <div class="monitoring-note">
+            <h3>📊 Monitoramento Automático</h3>
+            <p>
+                Este erro 404 foi automaticamente capturado pelo <strong>Grafana Beyla</strong> 
+                e está sendo contabilizado nas métricas de erro da aplicação. 
+                Você pode visualizar essas métricas no dashboard do Grafana.
+            </p>
+        </div>
+    </div>
+    
+    <script>
+        // Simular um pequeno delay para demonstrar captura de métricas
+        console.log('📊 Erro 404 capturado pelo Beyla - Timestamp:', new Date().toISOString());
+        
+        // Enviar evento customizado para demonstração
+        if (window.parent && window.parent !== window) {
+            window.parent.postMessage({
+                type: 'beyla-demo-event',
+                event: '404-error',
+                timestamp: Date.now(),
+                url: window.location.href
+            }, '*');
+        }
+    </script>
+</body>
+</html>

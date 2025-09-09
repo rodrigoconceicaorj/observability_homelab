@@ -1,0 +1,180 @@
+// Grafana Alloy Configuration
+// Recebe dados do Beyla e encaminha para Prometheus e Jaeger
+
+// Configuração de logging
+logging {
+  level  = "info"
+  format = "logfmt"
+}
+
+// Receptor OTLP para métricas do Beyla
+otelcol.receiver.otlp "beyla_metrics" {
+  grpc {
+    endpoint = "0.0.0.0:4317"
+  }
+  http {
+    endpoint = "0.0.0.0:4318"
+  }
+
+  output {
+    metrics = [otelcol.processor.batch.default.input]
+    traces  = [otelcol.processor.batch.default.input]
+    logs    = [otelcol.processor.batch.default.input]
+  }
+}
+
+// Processador de batch para otimizar envio
+otelcol.processor.batch "default" {
+  send_batch_size     = 1024
+  send_batch_max_size = 2048
+  timeout             = "5s"
+
+  output {
+    metrics = [otelcol.processor.attributes.add_labels.input]
+    traces  = [otelcol.exporter.jaeger.default.input]
+    logs    = [otelcol.exporter.logging.default.input]
+  }
+}
+
+// Processador para adicionar labels às métricas
+otelcol.processor.attributes "add_labels" {
+  action {
+    key    = "environment"
+    value  = "poc"
+    action = "insert"
+  }
+  action {
+    key    = "collector"
+    value  = "beyla"
+    action = "insert"
+  }
+  action {
+    key    = "team"
+    value  = "observability"
+    action = "insert"
+  }
+
+  output {
+    metrics = [otelcol.exporter.prometheus.default.input]
+  }
+}
+
+// Exportador Prometheus para métricas
+otelcol.exporter.prometheus "default" {
+  endpoint = "http://prometheus:9090/api/v1/write"
+  
+  // Configuração de retry
+  retry_on_failure {
+    enabled         = true
+    initial_interval = "5s"
+    max_interval    = "30s"
+    max_elapsed_time = "300s"
+  }
+  
+  // Configuração de queue
+  sending_queue {
+    enabled      = true
+    num_consumers = 10
+    queue_size   = 1000
+  }
+}
+
+// Exportador Jaeger para traces
+otelcol.exporter.jaeger "default" {
+  endpoint = "jaeger:14250"
+  tls {
+    insecure = true
+  }
+}
+
+// Exportador de logs para debug
+otelcol.exporter.logging "default" {
+  verbosity           = "normal"
+  sampling_initial    = 2
+  sampling_thereafter = 500
+}
+
+// Receptor Prometheus para métricas internas do Alloy
+prometheus.scrape "alloy_internal" {
+  targets = [{
+    __address__ = "localhost:12345",
+    job         = "alloy",
+  }]
+  forward_to = [prometheus.remote_write.default.receiver]
+  scrape_interval = "15s"
+}
+
+// Receptor Prometheus para métricas do Beyla (se habilitado)
+prometheus.scrape "beyla_metrics" {
+  targets = [{
+    __address__ = "beyla:9090",
+    job         = "beyla",
+  }]
+  forward_to = [prometheus.remote_write.default.receiver]
+  scrape_interval = "15s"
+}
+
+// Remote write para Prometheus
+prometheus.remote_write "default" {
+  endpoint {
+    url = "http://prometheus:9090/api/v1/write"
+    
+    // Configuração de retry
+    queue_config {
+      capacity             = 10000
+      max_shards          = 200
+      min_shards          = 1
+      max_samples_per_send = 2000
+      batch_send_deadline  = "5s"
+      min_backoff         = "30ms"
+      max_backoff         = "100ms"
+    }
+  }
+}
+
+// Descoberta de serviços Docker
+discovery.docker "containers" {
+  host = "unix:///var/run/docker.sock"
+  refresh_interval = "10s"
+  
+  filter {
+    name   = "label"
+    values = ["beyla.instrument=true"]
+  }
+}
+
+// Scraping automático de containers instrumentados
+prometheus.scrape "docker_containers" {
+  targets    = discovery.docker.containers.targets
+  forward_to = [prometheus.remote_write.default.receiver]
+  
+  scrape_interval = "15s"
+  scrape_timeout  = "10s"
+  
+  // Relabeling para extrair informações dos containers
+  relabel_config {
+    source_labels = ["__meta_docker_container_name"]
+    target_label  = "container_name"
+  }
+  
+  relabel_config {
+    source_labels = ["__meta_docker_container_label_beyla_service_name"]
+    target_label  = "service_name"
+  }
+  
+  relabel_config {
+    source_labels = ["__meta_docker_container_label_beyla_service_namespace"]
+    target_label  = "service_namespace"
+  }
+}
+
+// Health check endpoint
+prometheus.exporter.self "alloy_health" {
+  // Exporta métricas de saúde do próprio Alloy
+}
+
+prometheus.scrape "alloy_health" {
+  targets    = prometheus.exporter.self.alloy_health.targets
+  forward_to = [prometheus.remote_write.default.receiver]
+  job_name   = "alloy-health"
+}
